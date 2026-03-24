@@ -1,184 +1,116 @@
 <!doctype html>
 <html>
 <head>
-  <title>MediBridge - OCR</title>
+  <title>OCR Cropper</title>
 
-  <!-- Cropper CSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet"/>
 
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f4f9;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
+      font-family: Arial;
+      text-align: center;
+      background: #f4f4f9;
       padding: 20px;
-      box-sizing: border-box;
     }
 
-    /* 🔥 FIXED CONTAINER */
     #img-container {
       max-width: 500px;
-      width: 100%;
+      margin: auto;
       background: white;
       border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      padding: 0;              /* ✅ removed extra spacing */
-      overflow: hidden;        /* ✅ ensures tight fit */
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      overflow: hidden;
     }
 
-    /* 🔥 FIXED IMAGE */
     #preview {
       max-width: 100%;
-      height: auto;
-      display: block;          /* ✅ removes inline gap */
+      display: block;
     }
 
-    /* Buttons */
-    button, ::file-selector-button {
-      background-color: #007bff;
+    /* 🔥 Thick Crop Box */
+    .cropper-view-box {
+      outline: 3px solid #00ffcc !important;
+    }
+
+    .cropper-line {
+      background-color: #00ffcc !important;
+    }
+
+    .cropper-point {
+      width: 12px !important;
+      height: 12px !important;
+      background: #00ffcc !important;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      background: #007bff;
       color: white;
       border: none;
-      padding: 12px 24px;
-      border-radius: 25px;
-      font-size: 16px;
+      border-radius: 20px;
       cursor: pointer;
-      transition: background-color 0.3s;
-      margin: 5px;
     }
-
-    button:hover, ::file-selector-button:hover {
-      background-color: #0056b3;
-    }
-
-    /* Loader */
-    .loader {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #007bff;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      display: none;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .cropper-view-box {
-    outline: 3px solid #00ffcc !important;  /* thick bright border */
-  outline-color: rgba(0, 255, 204, 0.9);
-    }
-    .cropper-dashed {
-  border: 2px dashed rgba(0, 255, 204, 0.8) !important;
-}
-.cropper-face {
-  background-color: rgba(0, 0, 0, 0.1);
-}
-.cropper-point {
-  width: 12px !important;
-  height: 12px !important;
-  background-color: #00ffcc !important;
-  opacity: 1;
-}
-.cropper-line {
-  background-color: #00ffcc !important;
-  opacity: 0.9;
-}
   </style>
 </head>
 
 <body>
 
-  <h2>Upload and Crop Image for OCR</h2>
+<h2>Upload and Crop Image</h2>
 
-  <input type="file" id="fileInput" accept="image/*" required>
+<input type="file" id="fileInput">
 
-  <div id="img-container">
-    <img id="preview">
-  </div>
+<div id="img-container">
+  <img id="preview">
+</div>
 
-  <br>
+<button id="cropBtn" style="display:none;">Crop & Extract</button>
 
-  <button id="cropBtn" style="display:none;">Crop & Extract</button>
+<pre id="result"></pre>
 
-  <div id="loader" class="loader"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 
-  <div id="result"></div>
+<script>
+let cropper;
 
-  <!-- Cropper JS -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+fileInput.onchange = e => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
 
-  <script>
-    let cropper;
-    const fileInput = document.getElementById('fileInput');
-    const preview = document.getElementById('preview');
-    const cropBtn = document.getElementById('cropBtn');
+  reader.onload = () => {
+    preview.src = reader.result;
 
-    fileInput.addEventListener('change', e => {
-      const file = e.target.files[0];
+    if (cropper) cropper.destroy();
 
-      if (file) {
-        const reader = new FileReader();
-
-        reader.onload = () => {
-          preview.src = reader.result;
-          preview.style.display = 'block';
-
-          if (cropper) {
-            cropper.destroy();
-          }
-
-          // 🔥 FIXED CROPPER SETTINGS
-          cropper = new Cropper(preview, {
-            aspectRatio: NaN,
-            viewMode: 2,          // ✅ strict boundaries
-            autoCropArea: 1,      // ✅ full image selected
-            responsive: true,
-            background: false,    // ✅ removes grey gap
-            movable: true,
-            zoomable: true,
-            scalable: true
-          });
-
-          cropBtn.style.display = 'inline-block';
-        };
-
-        reader.readAsDataURL(file);
-      }
+    cropper = new Cropper(preview, {
+      viewMode: 2,
+      autoCropArea: 1,
+      background: false
     });
 
-    cropBtn.addEventListener('click', () => {
-      cropBtn.style.display = 'none';
-      document.getElementById('loader').style.display = 'block';
+    cropBtn.style.display = "inline-block";
+  };
 
-      const canvas = cropper.getCroppedCanvas();
+  reader.readAsDataURL(file);
+};
 
-      canvas.toBlob(blob => {
-        const formData = new FormData();
-        formData.append('file', blob, 'cropped.png');
+cropBtn.onclick = () => {
+  const canvas = cropper.getCroppedCanvas();
 
-        fetch('/api/ocr', {
-          method: 'POST',
-          body: formData
-        })
-        .then(res => res.text())
-        .then(text => {
-        document.getElementById('loader').style.display = 'none';
-        document.getElementById('result').innerHTML =
-        "<h3>Extracted Text:</h3><pre>" + text + "</pre>";
-        });
-      });
+  canvas.toBlob(blob => {
+    const formData = new FormData();
+    formData.append("file", blob, "image.png");
+
+    fetch("/api/ocr", {
+      method: "POST",
+      body: formData
+    })
+    .then(res => res.text())
+    .then(text => {
+      result.innerText = text;
     });
-  </script>
+  });
+};
+</script>
 
 </body>
 </html>
